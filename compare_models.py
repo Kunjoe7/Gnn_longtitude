@@ -7,12 +7,13 @@ import os
 import argparse
 import json
 from datetime import datetime
+import numpy as np
 
 from config import Config
 from data_module import TGBData
 from models import get_model
 from trainer import Trainer
-from utils import set_seed, save_results, compare_models, create_results_table
+from utils import set_seed, save_results, compare_models, create_results_table, make_json_serializable
 from main import run_experiment
 
 
@@ -63,12 +64,18 @@ def compare_all_models(dataset='tgbl-wiki', models=['tgn', 'dyrep', 'jodie', 'sa
         if model_results:
             all_results[model_name] = model_results
     
-    # Save comparison results
+    # Save comparison results with JSON serialization fix
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     comparison_path = os.path.join('results', f'comparison_{dataset}_{timestamp}.json')
     
+    # Make sure results directory exists
+    os.makedirs('results', exist_ok=True)
+    
+    # Convert to JSON serializable format
+    serializable_results = make_json_serializable(all_results)
+    
     with open(comparison_path, 'w') as f:
-        json.dump(all_results, f, indent=4)
+        json.dump(serializable_results, f, indent=4)
     
     print(f"\nComparison results saved to {comparison_path}")
     
@@ -78,9 +85,37 @@ def compare_all_models(dataset='tgbl-wiki', models=['tgn', 'dyrep', 'jodie', 'sa
     # Extract final test metrics for comparison
     final_metrics = {}
     for model, runs in all_results.items():
-        final_metrics[model] = [r['final_metrics'] for r in runs]
+        if runs:  # Check if we have results for this model
+            # Try to extract metrics from different possible locations
+            model_metrics = []
+            for run_result in runs:
+                if isinstance(run_result, dict):
+                    # Look for metrics in different possible keys
+                    if 'final_metrics' in run_result:
+                        metric_val = run_result['final_metrics'].get('auc', 0)
+                    elif 'auc' in run_result:
+                        metric_val = run_result['auc']
+                    elif 'history' in run_result:
+                        # Get best validation AUC from history
+                        history = run_result['history']
+                        if 'val_auc' in history and history['val_auc']:
+                            metric_val = max(history['val_auc'])
+                        else:
+                            metric_val = 0
+                    else:
+                        metric_val = 0
+                    model_metrics.append(float(metric_val))
+                else:
+                    model_metrics.append(0)
+            
+            final_metrics[model] = model_metrics
     
-    compare_models(final_metrics, metric='auc', save_path=plot_path)
+    # Only create comparison plot if we have results
+    if final_metrics:
+        try:
+            compare_models(final_metrics, metric='auc', save_path=plot_path)
+        except Exception as e:
+            print(f"Error creating comparison plot: {e}")
     
     # Print summary
     print("\n" + "="*60)
@@ -88,11 +123,33 @@ def compare_all_models(dataset='tgbl-wiki', models=['tgn', 'dyrep', 'jodie', 'sa
     print("="*60)
     
     for model, runs in all_results.items():
-        aucs = [r['final_metrics'].get('auc', 0) for r in runs]
-        if aucs:
-            mean_auc = sum(aucs) / len(aucs)
-            std_auc = (sum((x - mean_auc)**2 for x in aucs) / len(aucs))**0.5
-            print(f"{model}: AUC = {mean_auc:.4f} ± {std_auc:.4f}")
+        if runs:
+            # Extract AUC values
+            aucs = []
+            for run_result in runs:
+                if isinstance(run_result, dict):
+                    if 'final_metrics' in run_result:
+                        auc_val = run_result['final_metrics'].get('auc', 0)
+                    elif 'auc' in run_result:
+                        auc_val = run_result['auc']
+                    elif 'history' in run_result:
+                        history = run_result['history']
+                        if 'val_auc' in history and history['val_auc']:
+                            auc_val = max(history['val_auc'])
+                        else:
+                            auc_val = 0
+                    else:
+                        auc_val = 0
+                    aucs.append(float(auc_val))
+            
+            if aucs:
+                mean_auc = np.mean(aucs)
+                std_auc = np.std(aucs)
+                print(f"{model}: AUC = {mean_auc:.4f} ± {std_auc:.4f}")
+            else:
+                print(f"{model}: No valid results")
+        else:
+            print(f"{model}: Failed to run")
     
     return all_results
 

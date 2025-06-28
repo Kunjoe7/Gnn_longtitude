@@ -380,7 +380,17 @@ class GAT(nn.Module):
 
 
 def get_model(model_name, num_nodes, node_dim, edge_dim, time_dim, hidden_dim, **kwargs):
-    """Get model by name"""
+    """Get model by name with proper parameter handling"""
+    
+    # Define which models use which parameters
+    model_params = {
+        'tgn': ['num_nodes', 'node_dim', 'edge_dim', 'time_dim', 'memory_dim', 'hidden_dim'],
+        'dyrep': ['num_nodes', 'node_dim', 'edge_dim', 'time_dim', 'hidden_dim'],
+        'jodie': ['num_nodes', 'node_dim', 'edge_dim', 'time_dim', 'hidden_dim'],
+        'sage': ['num_nodes', 'node_dim', 'edge_dim', 'time_dim', 'hidden_dim'],
+        'gat': ['num_nodes', 'node_dim', 'edge_dim', 'time_dim', 'hidden_dim']
+    }
+    
     models = {
         'tgn': TGN,
         'dyrep': DyRep,
@@ -392,11 +402,23 @@ def get_model(model_name, num_nodes, node_dim, edge_dim, time_dim, hidden_dim, *
     if model_name not in models:
         raise ValueError(f"Unknown model: {model_name}")
     
-    return models[model_name](
-        num_nodes=num_nodes,
-        node_dim=node_dim,
-        edge_dim=edge_dim,
-        time_dim=time_dim,
-        hidden_dim=hidden_dim,
-        **kwargs
-    )
+    # Prepare arguments based on model requirements
+    model_args = {
+        'num_nodes': num_nodes,
+        'node_dim': node_dim,
+        'edge_dim': edge_dim,
+        'time_dim': time_dim,
+        'hidden_dim': hidden_dim
+    }
+    
+    # Add memory_dim only for models that need it
+    if 'memory_dim' in model_params.get(model_name, []):
+        model_args['memory_dim'] = kwargs.get('memory_dim', hidden_dim)
+    
+    # Add any additional valid kwargs for this model
+    valid_params = model_params.get(model_name, [])
+    for key, value in kwargs.items():
+        if key in valid_params or key in ['num_layers', 'dropout', 'num_heads']:
+            model_args[key] = value
+    
+    return models[model_name](**model_args)

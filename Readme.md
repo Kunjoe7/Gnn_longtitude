@@ -228,23 +228,6 @@ Final Test AUC: 0.8876
 
 ## 🛠️ Troubleshooting
 
-1. **Out of Memory**: Reduce `batch_size` or `hidden_dim`
-2. **Slow Training**: Use GPU with `--device cuda`
-3. **Poor Performance**: Try different learning rates or more epochs
-
 ## 📚 Citation
 
-If you use this pipeline, please cite:
-
-```bibtex
-@article{huang2023temporal,
-  title={Temporal Graph Benchmark for Machine Learning on Temporal Graphs},
-  author={Huang, Shenyang and others},
-  journal={arXiv preprint arXiv:2307.01026},
-  year={2023}
-}
-```
-
 ## 📝 License
-
-MIT License

@@ -1,0 +1,64 @@
+{
+    "config": {
+        "dataset": "tgbl-wiki",
+        "data_root": "./data",
+        "model_name": "tgn",
+        "node_dim": 100,
+        "time_dim": 100,
+        "edge_dim": 172,
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "dropout": 0.1,
+        "num_neighbors": 10,
+        "memory_dim": 100,
+        "memory_update": "gru",
+        "epochs": 5,
+        "batch_size": 200,
+        "lr": 0.001,
+        "weight_decay": 0.0,
+        "neg_sample_ratio": 1,
+        "patience": 10,
+        "min_epochs": 20,
+        "device": "cuda",
+        "num_workers": 4,
+        "seed": 44,
+        "log_dir": "./logs",
+        "checkpoint_dir": "./checkpoints",
+        "result_dir": "./results",
+        "save_interval": 10,
+        "verbose": true,
+        "num_nodes": 9227
+    },
+    "results": {
+        "history": {
+            "train_loss": [
+                0.5351731922963391,
+                0.27718169547185517,
+                0.2053580561355836,
+                0.16718580652082313,
+                0.14670666721581982
+            ],
+            "val_auc": [
+                0.8596597388625656,
+                0.8800500875307937,
+                0.8898336164226821,
+                0.8992410096702269,
+                0.8994952046390701
+            ],
+            "test_auc": [
+                0.8412405941826059,
+                0.861701365620681,
+                0.869109559622211,
+                0.8772230880489515,
+                0.8789692160794272
+            ]
+        },
+        "final_metrics": {
+            "hits@10": 1.0,
+            "mrr": 0.938218891620636
+        },
+        "best_val_auc": 0.8994952046390701,
+        "best_epoch": 4
+    },
+    "timestamp": "2025-06-28T16:37:06.346001"
+}

@@ -32,10 +32,12 @@ def make_json_serializable(obj):
         return [make_json_serializable(item) for item in obj]
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
-    elif isinstance(obj, (np.integer, np.floating)):
-        return obj.item()
+    elif isinstance(obj, (np.integer, np.floating, np.float32, np.float64)):
+        return float(obj.item())
     elif isinstance(obj, torch.device):
         return str(obj)
+    elif isinstance(obj, torch.Tensor):
+        return obj.detach().cpu().numpy().tolist()
     elif hasattr(obj, '__dict__'):
         # Handle custom objects by converting their __dict__
         return make_json_serializable(obj.__dict__)
